@@ -2,5 +2,7 @@ venv/
 __pycache__/
 *.pyc
 data/
-models/
+models/*
+!models/churn_model_v_auto.pkl
+!models/current_model.json
 .env
