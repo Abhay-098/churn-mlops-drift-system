@@ -1,3 +1,5 @@
+from prometheus_client import Counter, generate_latest
+from fastapi.responses import Response
 from app.model import load_model, save_model, get_model_info
 from fastapi import FastAPI
 from app.model import rollback_model
@@ -14,6 +16,21 @@ from retraining.retrain import retrain_model
 from app.model import load_model, save_model
 
 app = FastAPI()
+
+prediction_counter = Counter(
+    "churn_predictions_total",
+    "Total number of predictions made"
+)
+
+drift_counter = Counter(
+    "drift_events_total",
+    "Total number of drift detections"
+)
+
+retrain_counter = Counter(
+    "model_retraining_total",
+    "Total number of model retraining events"
+)
 
 # Load model using model manager
 model = load_model()
@@ -44,6 +61,7 @@ def predict(data: dict):
     # =========================
     prediction = model.predict(df)[0]
     probability = model.predict_proba(df)[0][1]
+    prediction_counter.inc()
 
     # =========================
     # Log prediction input
@@ -63,10 +81,13 @@ def predict(data: dict):
         )
 
         if drift_flag:
+            drift_counter.inc()
             print("⚠ Drift detected! Retraining model...")
-
-            # Retrain model
+             # Retrain model
             new_model = retrain_model(version="v_auto")
+
+            retrain_counter.inc()
+           
 
             # Save via model manager
             save_model(new_model, version="v_auto")
@@ -97,3 +118,7 @@ def rollback(version: str):
     model = load_model()
 
     return result
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type="text/plain")
