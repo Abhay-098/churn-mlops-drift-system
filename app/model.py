@@ -38,3 +38,20 @@ def save_model(model, version):
 def get_model_info():
     with open(CURRENT_MODEL_FILE, "r") as f:
         return json.load(f)
+
+def rollback_model(version):
+    filename = f"churn_model_{version}.pkl"
+    model_path = os.path.join(MODEL_DIR, filename)
+
+    if not os.path.exists(model_path):
+        return {"error": "Model version not found"}
+
+    metadata = {
+        "active_model": filename,
+        "version": version
+    }
+
+    with open(CURRENT_MODEL_FILE, "w") as f:
+        json.dump(metadata, f, indent=4)
+
+    return {"message": f"Rolled back to {filename}"}

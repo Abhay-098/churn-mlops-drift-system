@@ -1,5 +1,6 @@
 from app.model import load_model, save_model, get_model_info
 from fastapi import FastAPI
+from app.model import rollback_model
 import pandas as pd
 import os
 import sys
@@ -86,3 +87,13 @@ def predict(data: dict):
 @app.get("/model-info")
 def model_info():
     return get_model_info()
+
+@app.post("/rollback/{version}")
+def rollback(version: str):
+
+    result = rollback_model(version)
+
+    global model
+    model = load_model()
+
+    return result
